@@ -29,7 +29,6 @@ public class taskServ extends HttpServlet {
 	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
 	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		// TODO Auto-generated method stub
 		response.getWriter().append("Served at: ").append(request.getContextPath());
 	}
 
@@ -58,6 +57,11 @@ public class taskServ extends HttpServlet {
 
 		String id = request.getParameter("id");
 		String val = request.getParameter("val");
+		
+		if (id == null)
+			System.out.println("TA PAME");
+		else 
+			System.out.print(id);
 		try {
 			updateDB(id,val);
 			if(val.equals("0")) mainServ.tasks.get(id).cancel(false);

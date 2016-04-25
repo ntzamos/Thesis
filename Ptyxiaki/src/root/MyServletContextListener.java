@@ -56,8 +56,14 @@ public class MyServletContextListener implements ServletContextListener {
 			rs = stmt.executeQuery(sql);
 
 			while (rs.next()) {
+				String id = rs.getString("id");
+				String filename = rs.getString("filename");
+				String address = rs.getString("server_address");
+				String delimeter = rs.getString("delimeter");
+				String unique_keys = rs.getString("unique_keys");
+				String time = rs.getString("time");
 
-
+				mainServ.createTask(id, filename, address, delimeter, unique_keys, time);
 			}
 
 			System.out.println("Updated Scheduler");

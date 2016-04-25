@@ -42,9 +42,18 @@ public class mainServ extends HttpServlet {
 	
 	/** @see HttpServlet#doPost(HttpServletRequest request, HttpServletResponse response)*/
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+		String id;
+		String filename = request.getParameter("filename");
+		String address = request.getParameter("server_address");
+		String delimeter = request.getParameter("delimeter");
+		String unique_keys = request.getParameter("unique_keys");
+		String time = request.getParameter("time");
 		
 		try {
-			createTask(request); }	// Create a task
+			id = insertDB(request);	// Add task to DB
+			System.out.println("Task ID from db" + id);
+			
+			createTask(id, filename, address, delimeter, unique_keys, time); }	// Create a task
 		catch (InstantiationException | IllegalAccessException | ClassNotFoundException | SQLException e) {
 			e.printStackTrace(); }
 		
@@ -54,20 +63,12 @@ public class mainServ extends HttpServlet {
 	
 
 	
-	public static void createTask(HttpServletRequest req) throws InstantiationException, IllegalAccessException, ClassNotFoundException, SQLException {
-		String id;
-		String filename = req.getParameter("filename");
-		String address = req.getParameter("server_address");
-		String delimeter = req.getParameter("delimeter");
-		String unique_keys = req.getParameter("unique_keys");
-		String time = req.getParameter("seconds");
+	public static void createTask(String id, String filename, String add, String delim, String keys, String time) throws InstantiationException, IllegalAccessException, ClassNotFoundException, SQLException {
+		
 		Integer seconds = Integer.parseInt(time);
 		
-		id = insertDB(req);	// Add task to DB
-		System.out.println("Task ID from db" + id);
-		
 		// Create task
-		Task task = new Task(id, filename, address, delimeter, unique_keys, time);		
+		Task task = new Task(id, filename, add, delim, keys, time);		
 		
 		// Schedule task
 		ScheduledFuture<?> sf = scheduler.scheduleAtFixedRate(task, seconds, seconds , TimeUnit.SECONDS);
