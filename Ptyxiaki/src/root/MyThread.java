@@ -5,9 +5,7 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.Socket;
@@ -15,14 +13,14 @@ import java.net.UnknownHostException;
 
 class MyThread extends Thread {
 
-    private String cmd;
+   // private String cmd;
     private String filename;
 
     static BufferedReader bufIn;
     static BufferedWriter bufOut;
     static OutputStream out;
     public MyThread(String cmd, String filename) {
-        this.cmd = cmd;
+        //this.cmd = cmd;
         this.filename = filename;
     }
     public static boolean sendStr(String str) throws IOException {
@@ -61,7 +59,6 @@ class MyThread extends Thread {
 	        
 	        sendStr(filename);
 	        
-	        
 	        sendFile("/home/commando/init");
 	        
 	        bufOut.close();
@@ -69,10 +66,8 @@ class MyThread extends Thread {
 	        os.close();
 	        
 		} catch (UnknownHostException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
     }

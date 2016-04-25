@@ -1,6 +1,5 @@
 package root;
 
-
 import java.io.IOException;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -14,9 +13,7 @@ import javax.servlet.http.HttpServletResponse;
 import com.mysql.jdbc.Connection;
 import com.mysql.jdbc.Statement;
 
-/**
- * Servlet implementation class taskServ
- */
+
 @WebServlet("/taskServ")
 public class taskServ extends HttpServlet {
 	private static final long serialVersionUID = 1L;
@@ -26,7 +23,6 @@ public class taskServ extends HttpServlet {
      */
     public taskServ() {
         super();
-        // TODO Auto-generated constructor stub
     }
 
 	/**
@@ -59,7 +55,6 @@ public class taskServ extends HttpServlet {
 		
 	}
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		// TODO Auto-generated method stub
 
 		String id = request.getParameter("id");
 		String val = request.getParameter("val");
@@ -68,7 +63,6 @@ public class taskServ extends HttpServlet {
 			if(val.equals("0")) mainServ.tasks.get(id).cancel(false);
 			
 		} catch (InstantiationException | IllegalAccessException | ClassNotFoundException | SQLException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 

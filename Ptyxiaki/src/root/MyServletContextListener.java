@@ -20,13 +20,8 @@ import com.mysql.jdbc.Statement;
 @WebListener
 public class MyServletContextListener implements ServletContextListener {
 
-    /**
-     * Default constructor. 
-     */
 	
     public MyServletContextListener() {
-        // TODO Auto-generated constructor stub
-
         root.mainServ.tasks = new HashMap<>();
 		root.mainServ.scheduler = Executors.newScheduledThreadPool(4);
     	System.out.println("CONSTRUCTOR!~~~~~~~~~~~~~~~");
@@ -36,14 +31,14 @@ public class MyServletContextListener implements ServletContextListener {
      * @see ServletContextListener#contextDestroyed(ServletContextEvent)
      */
     public void contextDestroyed(ServletContextEvent arg0)  { 
-         // TODO Auto-generated method stub
+         
     }
 
 	/**
      * @see ServletContextListener#contextInitialized(ServletContextEvent)
      */
     public void contextInitialized(ServletContextEvent arg0) { 
-         // TODO Auto-generated method stub
+        
     	System.out.println("STARTEDDDDD FROM THE BOTTOM!!!!!!!!!!!!!!!!!");
     
 		try {
@@ -61,11 +56,8 @@ public class MyServletContextListener implements ServletContextListener {
 			rs = stmt.executeQuery(sql);
 
 			while (rs.next()) {
-				  String id = rs.getString("id");
-				  String source = rs.getString("source");
-				  Integer time = rs.getInt("time");
 
-				  mainServ.myScheduler(id,source, time);
+
 			}
 
 			System.out.println("Updated Scheduler");
@@ -74,16 +66,12 @@ public class MyServletContextListener implements ServletContextListener {
 			
 			
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (InstantiationException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (IllegalAccessException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (ClassNotFoundException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 

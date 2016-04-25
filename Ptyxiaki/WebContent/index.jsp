@@ -51,18 +51,52 @@
     </div><!-- /.container -->
 	
     <div class="container">
-    <center>
-    <form class="form-inline" action="mainServ" method="POST">
-	  <div class="form-group">
-	    <label for="name">Task Name</label>
-	    <input type="text" class="form-control" id="name" name="name" placeholder="Task Name">
+    <div id="myModal" class="modal fade" role="dialog">
+	  <div class="modal-dialog">
+	
+	    <!-- Modal content-->
+	    <div class="modal-content">
+	      <div class="modal-header">
+	        <button type="button" class="close" data-dismiss="modal">&times;</button>
+	        <h4 class="modal-title">Add new Task</h4>
+	      </div>
+	      <div class="modal-body">
+			  <div class="form-group">
+			    <label for="name">Has Header </label>
+			    <input type="checkbox" id="has_header" name="has_header" checked="checked">
+			  </div>
+			<form action="mainServ" method="POST">
+			  <div class="form-group">
+			    <label for="name">Filename</label>
+			    <input type="text" class="form-control" id="filename" name="filename" placeholder="Filename">
+			  </div>
+			  <div class="form-group">
+			    <label for="name">Server Address</label>
+			    <input type="text" class="form-control" id="server_address" name="server_address" placeholder="Server Address">
+			  </div>
+			  <div class="form-group">
+			    <label for="name">Delimeter</label>
+			    <input type="text" class="form-control" id="delimeter" name="delimeter" placeholder="Delimeter">
+			  </div>
+			  <div class="form-group">
+			    <label for="name">Unique Keys (comma separated)</label>
+			    <input type="text" class="form-control" id="unique_keys" name="unique_keys" placeholder="key1,key2,key3,..">
+			  </div>
+			  <div class="form-group">
+			    <label for="seconds">Repeat Every Seconds</label>
+			    <input type="text" class="form-control" id="time" name="time" placeholder="Seconds">
+			  </div>
+			  <button type="submit" class="btn btn-info btn-default">Create Task</button>
+			</form>
+	      </div>
+	      <div class="modal-footer">
+	        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+	      </div>
+	    </div>
+	
 	  </div>
-	  <div class="form-group">
-	    <label for="seconds">Every Seconds</label>
-	    <input type="text" class="form-control" id="seconds" name="seconds" placeholder="Seconds">
-	  </div>
-	  <button type="submit" class="btn btn-default">Create Task</button>
-	</form></center>
+	</div>
+	<button type="button" class="btn btn-info btn-lg" data-toggle="modal" data-target="#myModal">Add new Task</button>
 	<hr/>
 
 		<!-- 
@@ -73,7 +107,7 @@
 	
 	<table class="table">
 		<caption>My Tasks</caption>
-		<thead> <tr> <th>#</th> <th>Source</th> <th>Time</th> <th>Stop</th> </tr> </thead>
+		<thead> <tr> <th>Header</th> <th>Filename</th> <th>Server Address</th> <th>Delimeter</th> <th>Unique Keys</th> <th>Seconds</th></tr> </thead>
 		<tbody> 
 		<% 
 	try {
@@ -85,11 +119,15 @@
 	    Statement stmt = connection.createStatement();
 		ResultSet rs = stmt.executeQuery("SELECT * FROM tasks WHERE active = 1");
 		while (rs.next()) {
+			Integer has_header = rs.getInt("has_header");
 			String id = rs.getString("id");
-			String source = rs.getString("source");
+			String filename = rs.getString("filename");
+			String address = rs.getString("server_address");
+			String delimeter = rs.getString("delimeter");
+			String keys = rs.getString("unique_keys");
 			String time = rs.getString("time");
 			String active = rs.getString("active");
-		    out.println("<tr> <th scope='row'>"+ id +"</th> <td>"+source+"</td> <td>"+time+"</td> <td>"+	
+		    out.println("<tr> <th scope='row'>"+ has_header +"</th> <td>"+filename+"</td>  <td>"+address+"</td>  <td>"+delimeter+"</td> <td>"+keys+"</td> <td>"+time+"</td> <td>"+	
 		    "<form action='taskServ' method='POST'><input type='hidden' value='0' name='val'>"+
 			"<input type='hidden' name='id' value='"+ id +"'>  <input type='submit' value='STOP' /></form></td></tr>");
 		}
