@@ -17,54 +17,47 @@ import scala.Tuple2;
 
 public class App
 {
-
-
-    public static void main( String[] args ) throws IOException
-    {
+	public static void main( String[] args ) throws IOException
+	{
 		SparkConf conf = new SparkConf().setAppName("HelloTEST").setMaster("mesos://node2:5050");
 		JavaSparkContext sc = new JavaSparkContext(conf);
 
 		// Which file to update
 		String filename = args[0];
 
-		List <String> inserts = new ArrayList<String>();
+		//=================================================================
+		// Read DELTA file from hdfs (Tha to xei valei o socket server)
+		//=================================================================
+		JavaRDD<String> deltaFile = sc.textFile("/hdfs/updates.csv");
 
-		//========================
-		// Read local DELTA file
-		//========================
-		FileInputStream fstream = new FileInputStream("/home/cluster/ptyxiaki/updates.csv");
-		BufferedReader br = new BufferedReader(new InputStreamReader(fstream));
+		//=================================================================
+		// Filter and get all the inserts (I: ..)
+		//=================================================================
+		JavaRDD<String> inserts = deltaFile.filter(new Function<String, Boolean>() {
+			public Boolean call(String strLine) {
+				String [] parts = strLine.split(":");	// I: x,y,z format
+				String operation = parts[0];			// Operation can be 'I', 'D' or 'U'
+				return (operation.equals("I"));			// if Insert operation keep this
 
-		String strLine;
+			}
+		}).map(new Function<String, String>() {			// Map in order to get after I: line
+			public String call(String strLine) {
+				String [] parts = strLine.split(":");	// I: x,y,z format
+				return parts[1]+":0";					// right part of line
+			}
+		});
 
-		while ((strLine = br.readLine()) != null)   {
+		List<String> mylist = inserts.collect();
 
-			// I: x,y,z format
-			String [] parts = strLine.split(":");
-
-			// Operation can be 'I', 'D' or 'U'
-			String operation = parts[0];
-
-			// Line to be inserted
-			String line_to_add = parts[1];
-
-			if (operation.equals("I"))
-				inserts.add(line_to_add);
+		for (String i : mylist){
+			System.out.println(i);
 		}
-
-		//Close input stream
-		br.close();
-
-		// Convert List to Rdd
-		JavaRDD<String> insert_lines = sc.parallelize(inserts);
-
 		//==============================
 		// Get file-to-update from HDFS
 		//==============================
 		// JavaRDD<String> fileToUpdate = sc.textFile("/hdfs/" + fileToUpdate);
-		JavaRDD<String> fileToUpdate = sc.textFile("/hdfs/file1.csv");	// TEST
-
-		JavaRDD<String> result = fileToUpdate.union(insert_lines);
+		JavaRDD<String> fileToUpdate = sc.textFile("/hdfs/file1.csv");	// TEST - USE THE ABOVE LATER
+		JavaRDD<String> result = fileToUpdate.union(inserts);
 
 		List<String> ls = result.collect();
 
@@ -73,5 +66,5 @@ public class App
 		}
 
 		System.out.println( "Hello World22!" );
-    }
+	}
 }
