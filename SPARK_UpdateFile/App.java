@@ -23,7 +23,7 @@ public class App
 		JavaSparkContext sc = new JavaSparkContext(conf);
 
 		Map <String, Integer> col_offset = new HashMap<String, Integer>();	// maps column names to indexes
-		Map <String, String> updated_vals = new HashMap<String, String>();	// maps keys to new values
+		List <String> header_lst = new ArrayList<String>();
 
 		// Which file to update
 		String filename = args[0];
@@ -33,18 +33,23 @@ public class App
 
 		// Unique keys
 		String [] unique_keys = args[2].split(",");
-
+		for (int i = 0; i < unique_keys.length; i++)	// Trim spaces
+		    unique_keys[i] = unique_keys[i].trim();
 
 		int unique_keys_size = unique_keys.length;
 
 		JavaRDD<String> deltaFile = sc.textFile("/hdfs/updates.csv");		//Read DELTA file from HDFS (Tha to xei valei o socket server)
 		JavaRDD<String> fileToUpdate = sc.textFile("/hdfs/" + filename);	//Read file-to-update from HDFS
+		JavaRDD<String> header_rdd = null;
 
 		String header = "no header";
 
 		if (has_header.equals("1")){		// if file has header
 
 			header = fileToUpdate.first();	// get Header
+			header_lst.add(header);
+			header_rdd = sc.parallelize(header_lst);	// Keap header rdd to add it back later
+
 			final String header2 = header;
 
 			fileToUpdate = fileToUpdate.filter(s -> !s.equals(header2));	// Remove header of file rdd
@@ -109,7 +114,13 @@ public class App
 					String key = "";
 
 					for (int i = 0; i < unique_keys_size; i ++){
-						int index = col_offset.get(unique_keys[i]);
+						int index;
+
+						if (has_header.equals("1"))	// if there is a header get index from mapping
+							index = col_offset.get(unique_keys[i]);
+						else						// else just get the index directly
+							index = Integer.parseInt(unique_keys[i]);
+
 						if (i == unique_keys_size - 1)
 							key += str[index];
 						else
@@ -128,7 +139,13 @@ public class App
 					String key = "";
 
 					for (int i = 0; i < unique_keys_size; i ++){
-						int index = col_offset.get(unique_keys[i]);
+						int index;
+
+						if (has_header.equals("1"))	// if there is a header get index from mapping
+							index = col_offset.get(unique_keys[i]);
+						else						// else just get the index directly
+							index = Integer.parseInt(unique_keys[i]);
+
 						if (i == unique_keys_size - 1)
 							key += str[index];
 						else
@@ -180,7 +197,13 @@ public class App
 					String key = Character.toString(line.charAt(line.length() - 1)) + ":";
 
 					for (int i = 0; i < unique_keys_size; i ++){
-						int index = col_offset.get(unique_keys[i]);
+						int index;
+
+						if (has_header.equals("1"))	// if there is a header get index from mapping
+							index = col_offset.get(unique_keys[i]);
+						else						// else just get the index directly
+							index = Integer.parseInt(unique_keys[i]);
+
 						if (i == unique_keys_size - 1)
 							key += str[index];
 						else
@@ -227,7 +250,8 @@ public class App
 		//=================================================================
 		// Add the NEW unique key line to fileToUpdate - UPDATE Happens here
 		//=================================================================
-		// fileToUpdate = fileToUpdate.union(real_updates_rdd).union(real_deletes_rdd);
+		if (has_header.equals("1"))
+			fileToUpdate = header_rdd.union(fileToUpdate);
 		fileToUpdate = fileToUpdate.union(real_updates_rdd);
 		fileToUpdate = fileToUpdate.union(real_deletes_rdd);
 		fileToUpdate = fileToUpdate.union(real_inserts_rdd);
