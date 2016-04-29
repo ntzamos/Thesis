@@ -1,7 +1,7 @@
 package com.incrementalupdates.app;
 import org.apache.spark.api.java.*;
-import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.JavaRDD;
+import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.PairFunction;
 import org.apache.spark.api.java.function.VoidFunction;
@@ -26,7 +26,7 @@ public class App
 		List <String> header_lst = new ArrayList<String>();
 
 		// Which file to update
-		String filename = args[0];
+		String filename = args[0].trim();
 
 		// File has header
 		String has_header = args[1];
