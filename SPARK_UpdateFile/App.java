@@ -38,6 +38,9 @@ public class App
 
 		int unique_keys_size = unique_keys.length;
 
+		// Delimeter to split the file
+		String delimeter = args[3].trim();
+
 		JavaRDD<String> deltaFile = sc.textFile("/hdfs/updates.csv");		//Read DELTA file from HDFS (Tha to xei valei o socket server)
 		JavaRDD<String> fileToUpdate = sc.textFile("/hdfs/" + filename);	//Read file-to-update from HDFS
 		JavaRDD<String> header_rdd = null;
@@ -110,7 +113,7 @@ public class App
 		JavaPairRDD<String, String> inserts = inserts_fake.mapToPair(
 			new PairFunction<String, String, String>() {
 				public Tuple2<String, String> call(final String line) {
-					String[] str = line.split(",");
+					String[] str = line.split(delimeter);
 					String key = "";
 
 					for (int i = 0; i < unique_keys_size; i ++){
@@ -135,7 +138,7 @@ public class App
 		JavaPairRDD<String, String> deletes = deletes_fake.mapToPair(
 			new PairFunction<String, String, String>() {
 				public Tuple2<String, String> call(final String line) {
-					String[] str = line.split(",");
+					String[] str = line.split(delimeter);
 					String key = "";
 
 					for (int i = 0; i < unique_keys_size; i ++){
@@ -193,7 +196,7 @@ public class App
 		JavaPairRDD<String, String> fileToUpdate_pair = fileToUpdate.mapToPair(
 			new PairFunction<String, String, String>() {
 				public Tuple2<String, String> call(final String line) {
-					String[] str = line.split(",");
+					String[] str = line.split(delimeter);
 					String key = Character.toString(line.charAt(line.length() - 1)) + ":";
 
 					for (int i = 0; i < unique_keys_size; i ++){
