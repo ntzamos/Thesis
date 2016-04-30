@@ -118,11 +118,16 @@ public class App
 
 					for (int i = 0; i < unique_keys_size; i ++){
 						int index;
+						String key_to_add = unique_keys[i];
 
 						if (has_header.equals("1"))	// if there is a header get index from mapping
-							index = col_offset.get(unique_keys[i]);
+							index = col_offset.get(key_to_add);
 						else						// else just get the index directly
-							index = Integer.parseInt(unique_keys[i]);
+							index = Integer.parseInt(key_to_add);
+
+						// Last column case
+						if (str[index].contains(":0") || str[index].contains(":1"))
+							str[index] = str[index].split(":")[0];
 
 						if (i == unique_keys_size - 1)
 							key += str[index];
@@ -143,11 +148,16 @@ public class App
 
 					for (int i = 0; i < unique_keys_size; i ++){
 						int index;
+						String key_to_add = unique_keys[i];
 
 						if (has_header.equals("1"))	// if there is a header get index from mapping
-							index = col_offset.get(unique_keys[i]);
+							index = col_offset.get(key_to_add);
 						else						// else just get the index directly
-							index = Integer.parseInt(unique_keys[i]);
+							index = Integer.parseInt(key_to_add);
+
+						// Last column case
+						if (str[index].contains(":0") || str[index].contains(":1"))
+							str[index] = str[index].split(":")[0];
 
 						if (i == unique_keys_size - 1)
 							key += str[index];
@@ -168,6 +178,7 @@ public class App
 		printJavaPairRDD(real_inserts);
 		printJavaPairRDD(real_updates);
 		printJavaPairRDD(real_deletes);
+		System.out.println("++++++++++++++++++++++++++++++++++++++");
 
 		JavaPairRDD<String, String> real_updates_plus = real_updates.mapToPair(
 			new PairFunction<Tuple2<String, String>, String, String>() {
@@ -201,11 +212,16 @@ public class App
 
 					for (int i = 0; i < unique_keys_size; i ++){
 						int index;
+						String key_to_add = unique_keys[i];
 
 						if (has_header.equals("1"))	// if there is a header get index from mapping
-							index = col_offset.get(unique_keys[i]);
+							index = col_offset.get(key_to_add);
 						else						// else just get the index directly
-							index = Integer.parseInt(unique_keys[i]);
+							index = Integer.parseInt(key_to_add);
+
+						// Last column case
+						if (str[index].contains(":0") || str[index].contains(":1"))
+							str[index] = str[index].split(":")[0];
 
 						if (i == unique_keys_size - 1)
 							key += str[index];
@@ -277,10 +293,10 @@ public class App
 		Map<String,String> mymap = pairRdd.collectAsMap();
 
 		for (Map.Entry<String,String> entry : mymap.entrySet()) {
-		  String key = entry.getKey();
-		  String value = entry.getValue();
-		  System.out.println("(("+key+")," + value + ")");
-	  	}
+			String key = entry.getKey();
+			String value = entry.getValue();
+			System.out.println("(("+key+")," + value + ")");
+		}
 		System.out.println("-------------------------------------------------");
 	}
 }
