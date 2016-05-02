@@ -22,7 +22,7 @@ public class App
 		SparkConf conf = new SparkConf().setAppName("HelloTEST").setMaster("mesos://node2:5050");
 		JavaSparkContext sc = new JavaSparkContext(conf);
 
-		Map <String, Integer> col_offset = new HashMap<String, Integer>();	// maps column names to indexes
+		Map <String, Integer> col_offset = new HashMap<String, Integer>();	// Maps column names to indexes
 		List <String> header_lst = new ArrayList<String>();
 
 		// Which file to update
@@ -41,21 +41,25 @@ public class App
 		// Delimeter to split the file
 		String delimeter = args[3].trim();
 
-		JavaRDD<String> deltaFile = sc.textFile("/hdfs/updates.csv");		//Read DELTA file from HDFS (Tha to xei valei o socket server)
+		JavaRDD<String> deltaFile = sc.textFile("/hdfs/delta");				//Read DELTA file from HDFS (Tha to xei valei o socket server)
 		JavaRDD<String> fileToUpdate = sc.textFile("/hdfs/" + filename);	//Read file-to-update from HDFS
 		JavaRDD<String> header_rdd = null;
 
 		String header = "no header";
 
-		if (has_header.equals("1")){		// if file has header
+		if (has_header.equals("1")){	// If file has header
 
-			header = fileToUpdate.first();	// get Header
+			// Get Header
+			header = fileToUpdate.first();
+
+			// Keap header rdd to add it back later
 			header_lst.add(header);
-			header_rdd = sc.parallelize(header_lst);	// Keap header rdd to add it back later
+			header_rdd = sc.parallelize(header_lst);
 
 			final String header2 = header;
 
-			fileToUpdate = fileToUpdate.filter(s -> !s.equals(header2));	// Remove header of file rdd
+			// Remove header of file rdd
+			fileToUpdate = fileToUpdate.filter(s -> !s.equals(header2));
 
 			String [] header_cols = header.split(",");
 
@@ -72,13 +76,12 @@ public class App
 		  Integer value = entry.getValue();
 		  System.out.println("col: " + key + ", index: " + value.toString());
 	  	}
-		System.out.println("======== HEADER ========");
+		System.out.println("=========== HEADER ===========");
 		System.out.println(header);
-		System.out.println("======== HEADER ========");
 		//=================================================================
 		// Filter and get all the INSERTS (I: ..)
 		//=================================================================
-		JavaRDD<String> inserts_fake = deltaFile.filter(new Function<String, Boolean>() {
+		JavaRDD<String> inserts = deltaFile.filter(new Function<String, Boolean>() {
 			public Boolean call(String strLine) {
 				String [] parts = strLine.split(":");	// I: x,y,z format
 				String operation = parts[0];			// Operation can be 'I', 'D' or 'U'
@@ -92,9 +95,24 @@ public class App
 			}
 		});
 		//=================================================================
+		// Filter and get all the UPDATES (U: ..)
+		//=================================================================
+		JavaRDD<String> updates = deltaFile.filter(new Function<String, Boolean>() {
+			public Boolean call(String strLine) {
+				String [] parts = strLine.split(":");	// I: x,y,z format
+				String operation = parts[0];			// Operation can be 'I', 'D' or 'U'
+				return (operation.equals("U"));			// if Insert operation keep this
+			}
+		}).map(new Function<String, String>() {			// Map in order to get after I: line
+			public String call(String strLine) {
+				String [] parts = strLine.split(":");	// I: x,y,z format
+				return parts[1]+":0";					// right part of line
+			}
+		});
+		//=================================================================
 		// Filter and get all the DELETES (D: ..)
 		//=================================================================
-		JavaRDD<String> deletes_fake = deltaFile.filter(new Function<String, Boolean>() {
+		JavaRDD<String> deletes = deltaFile.filter(new Function<String, Boolean>() {
 			public Boolean call(String strLine) {
 				String [] parts = strLine.split(":");	// I: x,y,z format
 				String operation = parts[0];			// Operation can be 'I', 'D' or 'U'
@@ -107,14 +125,15 @@ public class App
 				return parts[1]+":1";					// right part of line
 			}
 		});
+
 		//=================================================================
-		// Inserts: Map unique key to rest of line
+		// Updates: Map unique key to rest of line
 		//=================================================================
-		JavaPairRDD<String, String> inserts = inserts_fake.mapToPair(
+		JavaPairRDD<String, String> updates_pair = updates.mapToPair(
 			new PairFunction<String, String, String>() {
 				public Tuple2<String, String> call(final String line) {
 					String[] str = line.split(delimeter);
-					String key = "";
+					String key = "0:";
 
 					for (int i = 0; i < unique_keys_size; i ++){
 						int index;
@@ -140,11 +159,11 @@ public class App
 		//=================================================================
 		// Deletes: Map unique key to rest of line
 		//=================================================================
-		JavaPairRDD<String, String> deletes = deletes_fake.mapToPair(
+		JavaPairRDD<String, String> deletes_pair = deletes.mapToPair(
 			new PairFunction<String, String, String>() {
 				public Tuple2<String, String> call(final String line) {
 					String[] str = line.split(delimeter);
-					String key = "";
+					String key = "0:";
 
 					for (int i = 0; i < unique_keys_size; i ++){
 						int index;
@@ -167,38 +186,14 @@ public class App
 					return new Tuple2(key, line);
 				}
 			});
+		System.out.println("================= INSERTS ==================");
+		printJavaRDD(inserts);
+		System.out.println("================= UPDATES==================");
+		printJavaPairRDD(updates_pair);
+		System.out.println("================= DELETES ==================");
+		printJavaPairRDD(deletes_pair);
+		System.out.println("=================================================================");
 
-		// printJavaPairRDD(inserts);
-		// printJavaPairRDD(deletes);
-
-		JavaPairRDD<String,String> real_inserts = inserts.subtractByKey(deletes);
-		JavaPairRDD<String,String> real_updates = inserts.subtractByKey(real_inserts);
-		JavaPairRDD<String,String> real_deletes = deletes.subtractByKey(real_updates);
-
-		printJavaPairRDD(real_inserts);
-		printJavaPairRDD(real_updates);
-		printJavaPairRDD(real_deletes);
-		System.out.println("++++++++++++++++++++++++++++++++++++++");
-
-		JavaPairRDD<String, String> real_updates_plus = real_updates.mapToPair(
-			new PairFunction<Tuple2<String, String>, String, String>() {
-				public Tuple2<String, String> call(final Tuple2<String, String> t) {
-					String key = "0:" + t._1 ;
-
-					return new Tuple2(key, t._2);
-				}
-			});
-
-		JavaPairRDD<String, String> real_deletes_plus = real_deletes.mapToPair(
-			new PairFunction<Tuple2<String, String>, String, String>() {
-				public Tuple2<String, String> call(final Tuple2<String, String> t) {
-					String key = "0:" + t._1 ;
-
-					return new Tuple2(key, t._2);
-				}
-			});
-		printJavaPairRDD(real_updates_plus);
-		printJavaPairRDD(real_deletes_plus);
 		//=================================================================
 		// fileToUpdate: Map unique key to rest of line
 		//=================================================================
@@ -236,44 +231,25 @@ public class App
 		System.out.println("File to Update MAPPING");
 		printJavaPairRDD(fileToUpdate_pair);
 
-		//=================================================================
-		// Remove OLD unique key from fileToUpdate
-		//=================================================================
-		fileToUpdate_pair = fileToUpdate_pair.subtractByKey(real_updates_plus);
-		fileToUpdate_pair = fileToUpdate_pair.subtractByKey(real_deletes_plus);
+		// Remove OLD update lines from fileToUpdate
+		fileToUpdate_pair = fileToUpdate_pair.subtractByKey(updates_pair);
+		// Remove OLD delete lines from fileToUpdate
+		fileToUpdate_pair = fileToUpdate_pair.subtractByKey(deletes_pair);
 
-		JavaRDD<String> real_inserts_rdd = real_inserts.map(new Function<Tuple2<String, String>, String>() {
-			public String call(Tuple2<String, String> t) {
-				return t._2;
-			}
-		});
-
-		JavaRDD<String> real_updates_rdd = real_updates_plus.map(new Function<Tuple2<String, String>, String>() {
-			public String call(Tuple2<String, String> t) {
-				return t._2;
-			}
-		});
-
-		JavaRDD<String> real_deletes_rdd = real_deletes.map(new Function<Tuple2<String, String>, String>() {
-			public String call(Tuple2<String, String> t) {
-				return t._2;
-			}
-		});
-
+		// Convert file to update pair back to rdd in order to union it
 		fileToUpdate = fileToUpdate_pair.map(new Function<Tuple2<String, String>, String>() {
-			public String call(Tuple2<String, String> t) {
-				return t._2;
-			}
+			public String call(Tuple2<String, String> t){
+				return t._2; }
 		});
 
-		//=================================================================
+		//===================================================================
 		// Add the NEW unique key line to fileToUpdate - UPDATE Happens here
-		//=================================================================
+		//===================================================================
 		if (has_header.equals("1"))
 			fileToUpdate = header_rdd.union(fileToUpdate);
-		fileToUpdate = fileToUpdate.union(real_updates_rdd);
-		fileToUpdate = fileToUpdate.union(real_deletes_rdd);
-		fileToUpdate = fileToUpdate.union(real_inserts_rdd);
+		fileToUpdate = fileToUpdate.union(updates);
+		fileToUpdate = fileToUpdate.union(deletes);
+		fileToUpdate = fileToUpdate.union(inserts);
 
 		System.out.println("RESULT FILE");
 		printJavaRDD(fileToUpdate);
