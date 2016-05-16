@@ -12,7 +12,10 @@ public class runClass {
     public static void receiveFile (String filesize) throws IOException{
     	int count;
         byte[] buffer = new byte[Integer.valueOf(filesize)];
-        FileOutputStream fos = new FileOutputStream("/home/agg/delta3");
+//        FileOutputStream fos = new FileOutputStream("/home/agg/delta3");
+        FileOutputStream fos = new FileOutputStream("/home/cluster/ptyxiaki/delta");
+        
+
         
         while ((count = in.read(buffer)) >= 0) 
     		fos.write(buffer, 0, count);
@@ -61,20 +64,23 @@ public class runClass {
 	            
 	            // At first time just store Delta using the filename to HDFS
             	if (first_time.equals("1")){
-            		Process p1 = Runtime.getRuntime().exec("~/hadoop-2.7.1/bin/hadoop dfs -copyFromLocal delta /hdfs/" + filename);
+            		System.out.println("File does not exist, Saving file as delta..");
+
+            		Process p1 = Runtime.getRuntime().exec("/home/cluster/hadoop-2.7.1/bin/hdfs dfs -copyFromLocal /home/cluster/ptyxiaki/delta /hdfs/" + filename);
 				 	p1.waitFor();
             	}
             	// FileToUpdate exists in HDFS
             	else {
+            		System.out.println("File exists, Saving delta and updating file..");
             		// Store DeltaFile to HDFS (using -f to overwrite)
-				 	Process p2 = Runtime.getRuntime().exec("~/hadoop-2.7.1/bin/hadoop dfs -copyFromLocal -f delta /hdfs");
+				 	Process p2 = Runtime.getRuntime().exec("/home/cluster/hadoop-2.7.1/bin/hdfs dfs -copyFromLocal -f /home/cluster/ptyxiaki/delta /hdfs");
 				 	p2.waitFor();
 				
 				 	// Execute Spark Application in order to update the file
-				 	Process p3 = Runtime.getRuntime().exec("~/spark-1.5.2-bin-hadoop2.6/bin/spark-submit "
+				 	Process p3 = Runtime.getRuntime().exec("/home/cluster/spark-1.5.2-bin-hadoop2.6/bin/spark-submit "
 				 			+ "--class com.incrementalupdates.app.App "
 				 			+ "--master mesos://88.197.53.192:5050 "
-				 			+ "target/my-app-1.0-SNAPSHOT.jar " + filename + " " + has_header + " " + unique_keys + " " + delimeter);
+				 			+ "/home/cluster/ptyxiaki/my-app/target/my-app-1.0-SNAPSHOT.jar " + filename + " " + has_header + " " + unique_keys + " " + delimeter + " > /home/cluster/ptyxiaki/results");
 				
 				 	p3.waitFor();
 				

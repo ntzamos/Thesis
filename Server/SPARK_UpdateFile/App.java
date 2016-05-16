@@ -6,6 +6,7 @@ import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.PairFunction;
 import org.apache.spark.api.java.function.VoidFunction;
 import org.apache.spark.SparkConf;
+import org.apache.hadoop.conf.Configuration;
 import java.io.Serializable;
 import java.io.PrintWriter;
 import java.io.File;
@@ -14,6 +15,7 @@ import java.io.*;
 import java.lang.*;
 import java.util.*;
 import scala.Tuple2;
+import org.apache.hadoop.fs.*;
 
 public class App
 {
@@ -71,13 +73,13 @@ public class App
 
 		}
 
-		for (Map.Entry<String,Integer> entry : col_offset.entrySet()) {
-		  String key = entry.getKey();
-		  Integer value = entry.getValue();
-		  System.out.println("col: " + key + ", index: " + value.toString());
-	  	}
-		System.out.println("=========== HEADER ===========");
-		System.out.println(header);
+		// for (Map.Entry<String,Integer> entry : col_offset.entrySet()) {
+		//   String key = entry.getKey();
+		//   Integer value = entry.getValue();
+		//   System.out.println("col: " + key + ", index: " + value.toString());
+		//  	}
+		// System.out.println("=========== HEADER ===========");
+		// System.out.println(header);
 		//=================================================================
 		// Filter and get all the INSERTS (I: ..)
 		//=================================================================
@@ -186,13 +188,13 @@ public class App
 					return new Tuple2(key, line);
 				}
 			});
-		System.out.println("================= INSERTS ==================");
-		printJavaRDD(inserts);
-		System.out.println("================= UPDATES==================");
-		printJavaPairRDD(updates_pair);
-		System.out.println("================= DELETES ==================");
-		printJavaPairRDD(deletes_pair);
-		System.out.println("=================================================================");
+		// System.out.println("================= INSERTS ==================");
+		// printJavaRDD(inserts);
+		// System.out.println("================= UPDATES==================");
+		// printJavaPairRDD(updates_pair);
+		// System.out.println("================= DELETES ==================");
+		// printJavaPairRDD(deletes_pair);
+		// System.out.println("=================================================================");
 
 		//=================================================================
 		// fileToUpdate: Map unique key to rest of line
@@ -228,8 +230,8 @@ public class App
 				}
 			});
 
-		System.out.println("File to Update MAPPING");
-		printJavaPairRDD(fileToUpdate_pair);
+		// System.out.println("File to Update MAPPING");
+		// printJavaPairRDD(fileToUpdate_pair);
 
 		// Remove OLD update lines from fileToUpdate
 		fileToUpdate_pair = fileToUpdate_pair.subtractByKey(updates_pair);
@@ -251,8 +253,19 @@ public class App
 		fileToUpdate = fileToUpdate.union(deletes);
 		fileToUpdate = fileToUpdate.union(inserts);
 
-		System.out.println("RESULT FILE");
-		printJavaRDD(fileToUpdate);
+		// System.out.println("RESULT FILE");
+		// printJavaRDD(fileToUpdate);
+
+		// Kinda overwrite xD
+		FileSystem hdfs = FileSystem.get(new Configuration());
+		Path newFolderPath = new Path("/hdfs/" +filename);
+
+		if(hdfs.exists(newFolderPath)){
+			System.out.println("RE GAMW");
+			hdfs.delete(newFolderPath, true); //Delete existing Directory
+		}
+
+		fileToUpdate.coalesce(1).saveAsTextFile("/hdfs/" + filename);
 
 	}
 
