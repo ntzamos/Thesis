@@ -16,7 +16,6 @@ import java.lang.*;
 import java.util.*;
 import scala.Tuple2;
 import org.apache.hadoop.fs.*;
-
 public class App
 {
 	public static void main( String[] args ) throws IOException
@@ -42,18 +41,21 @@ public class App
 
 		// Delimeter to split the file
 		String delimeter = args[3].trim();
+		JavaRDD<String> deltaFile = null;
+		deltaFile = sc.textFile("/hdfs/delta");				//Read DELTA file from HDFS (Tha to xei valei o socket server)
 
-		JavaRDD<String> deltaFile = sc.textFile("/hdfs/delta");				//Read DELTA file from HDFS (Tha to xei valei o socket server)
-		JavaRDD<String> fileToUpdate = sc.textFile("/hdfs/" + filename);	//Read file-to-update from HDFS
+
+		JavaRDD<String> fileToUpdate = sc.textFile("/hdfs/inputs/" + filename);	//Read file-to-update from HDFS
 		JavaRDD<String> header_rdd = null;
 
+		System.out.println("READ FILES");
 		String header = "no header";
 
 		if (has_header.equals("1")){	// If file has header
 
 			// Get Header
 			header = fileToUpdate.first();
-
+			System.out.println("Header = " + header);
 			// Keap header rdd to add it back later
 			header_lst.add(header);
 			header_rdd = sc.parallelize(header_lst);
@@ -73,6 +75,7 @@ public class App
 
 		}
 
+		System.out.println("ALL GOOD");
 		// for (Map.Entry<String,Integer> entry : col_offset.entrySet()) {
 		//   String key = entry.getKey();
 		//   Integer value = entry.getValue();
@@ -253,19 +256,25 @@ public class App
 		fileToUpdate = fileToUpdate.union(deletes);
 		fileToUpdate = fileToUpdate.union(inserts);
 
-		// System.out.println("RESULT FILE");
-		// printJavaRDD(fileToUpdate);
-
 		// Kinda overwrite xD
 		FileSystem hdfs = FileSystem.get(new Configuration());
-		Path newFolderPath = new Path("/hdfs/" +filename);
 
-		if(hdfs.exists(newFolderPath)){
-			System.out.println("RE GAMW");
-			hdfs.delete(newFolderPath, true); //Delete existing Directory
+		// Save file to results directory
+		fileToUpdate.saveAsTextFile("/hdfs/results/" + filename);
+
+		Path inputs_dir = new Path("hdfs://node1:50050/hdfs/inputs");
+		Path results_dir = new Path("hdfs://node1:50050/hdfs/results");
+
+		// Delete Old input directory
+		if(hdfs.exists(inputs_dir)){
+			hdfs.delete(inputs_dir, true); //Delete existing Directory
 		}
 
-		fileToUpdate.coalesce(1).saveAsTextFile("/hdfs/" + filename);
+		// Move the current result directory -> input directory
+		hdfs.rename(results_dir, inputs_dir);
+
+		// Create empty results directory for the next call
+		hdfs.mkdirs(results_dir);
 
 	}
 
