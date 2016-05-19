@@ -61,11 +61,12 @@
 	        <h4 class="modal-title">Add new Task</h4>
 	      </div>
 	      <div class="modal-body">
+			<form action="mainServ" method="POST">
 			  <div class="form-group">
 			    <label for="name">Has Header </label>
-			    <input type="checkbox" id="has_header" name="has_header" checked="checked">
+			    <input type="hidden" class="form-control"  id="first_time" name="first_time" value="1">
+			    <input type="text" class="form-control"  id="has_header" name="has_header" value="0" placeholder="0">
 			  </div>
-			<form action="mainServ" method="POST">
 			  <div class="form-group">
 			    <label for="name">Filename</label>
 			    <input type="text" class="form-control" id="filename" name="filename" placeholder="Filename">
@@ -73,6 +74,10 @@
 			  <div class="form-group">
 			    <label for="name">Server Address</label>
 			    <input type="text" class="form-control" id="server_address" name="server_address" placeholder="Server Address">
+			  </div>
+			  <div class="form-group">
+			    <label for="name">Server Port</label>
+			    <input type="text" class="form-control" id="server_port" name="server_port" placeholder="Server Port">
 			  </div>
 			  <div class="form-group">
 			    <label for="name">Delimeter</label>
@@ -99,15 +104,9 @@
 	<button type="button" class="btn btn-info btn-lg" data-toggle="modal" data-target="#myModal">Add new Task</button>
 	<hr/>
 
-		<!-- 
-		<form action="taskServ" method="POST">
-		<input type="hidden" value="1" name="val">
-		Task id: <input type="text" name="id">  <input type="submit" value="Start" />
-		</form> -->
-	
 	<table class="table">
 		<caption>My Tasks</caption>
-		<thead> <tr> <th>Header</th> <th>Filename</th> <th>Server Address</th> <th>Delimeter</th> <th>Unique Keys</th> <th>Seconds</th></tr> </thead>
+		<thead> <tr> <th>Header</th> <th>Filename</th> <th>Server Address</th> <th>Server Port</th> <th>Delimeter</th> <th>Unique Keys</th> <th>Seconds</th></tr> </thead>
 		<tbody> 
 		<% 
 	try {
@@ -119,16 +118,17 @@
 	    Statement stmt = connection.createStatement();
 		ResultSet rs = stmt.executeQuery("SELECT * FROM tasks WHERE active = 1");
 		while (rs.next()) {
-			Integer has_header = rs.getInt("has_header");
+			String has_header = rs.getString("has_header");
 			String id = rs.getString("id");
 			String filename = rs.getString("filename");
 			String address = rs.getString("server_address");
+			String port = rs.getString("server_port");
 			String delimeter = rs.getString("delimeter");
 			String keys = rs.getString("unique_keys");
 			String time = rs.getString("time");
 			String active = rs.getString("active");
-		    out.println("<tr> <th scope='row'>"+ has_header +"</th> <td>"+filename+"</td>  <td>"+address+"</td>  <td>"+delimeter+"</td> <td>"+keys+"</td> <td>"+time+"</td> <td>"+	
-		    "<form action='taskServ' method='POST'><input type='hidden' value='0' name='val'>"+
+		    out.println("<tr> <th scope='row'>"+ has_header +"</th> <td>"+filename+"</td>  <td>"+address+"</td>  <td>"+port+"</td>  <td>"+delimeter+"</td> <td>"+keys+"</td> <td>"+time+"</td> <td>"+	
+		    "<form action='StopTaskServ' method='POST'>"+
 			"<input type='hidden' name='id' value='"+ id +"'>  <input type='submit' value='STOP' /></form></td></tr>");
 		}
 	    connection.close();

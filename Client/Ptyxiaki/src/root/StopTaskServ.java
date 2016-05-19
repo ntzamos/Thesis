@@ -14,14 +14,14 @@ import com.mysql.jdbc.Connection;
 import com.mysql.jdbc.Statement;
 
 
-@WebServlet("/taskServ")
-public class taskServ extends HttpServlet {
+@WebServlet("/StopTaskServ")
+public class StopTaskServ extends HttpServlet {
 	private static final long serialVersionUID = 1L;
        
     /**
      * @see HttpServlet#HttpServlet()
      */
-    public taskServ() {
+    public StopTaskServ() {
         super();
     }
 
@@ -36,35 +36,23 @@ public class taskServ extends HttpServlet {
 	 * @see HttpServlet#doPost(HttpServletRequest request, HttpServletResponse response)
 	 */
 
-	public void updateDB(String id, String val) throws InstantiationException, IllegalAccessException, ClassNotFoundException, SQLException {
-
+	public void StopTaskDB(String id) throws InstantiationException, IllegalAccessException, ClassNotFoundException, SQLException {
 		String connectionURL = "jdbc:mysql://localhost/ptyxiaki";
-		Connection connection = null; 
 		Class.forName("com.mysql.jdbc.Driver").newInstance(); 
-		connection = (Connection) DriverManager.getConnection(connectionURL, "root", "root");
-		
+		Connection connection = (Connection) DriverManager.getConnection(connectionURL, "root", "root");
 		Statement stmt = (Statement) connection.createStatement();
-		
-		 
-		String sql = "UPDATE tasks SET active="+val+" WHERE id="+ id;
+				 
+		String sql = "UPDATE tasks SET active=0 WHERE id="+ id;
 		stmt.executeUpdate(sql);
-		
-		connection.close();
-		
-		
+		connection.close();		
 	}
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 
 		String id = request.getParameter("id");
-		String val = request.getParameter("val");
 		
-		if (id == null)
-			System.out.println("TA PAME");
-		else 
-			System.out.print(id);
 		try {
-			updateDB(id,val);
-			if(val.equals("0")) mainServ.tasks.get(id).cancel(false);
+			StopTaskDB(id);
+			mainServ.tasks.get(id).cancel(false);
 			
 		} catch (InstantiationException | IllegalAccessException | ClassNotFoundException | SQLException e) {
 			e.printStackTrace();

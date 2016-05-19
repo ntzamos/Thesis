@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Date;
 import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -45,15 +44,19 @@ public class mainServ extends HttpServlet {
 		String id;
 		String filename = request.getParameter("filename");
 		String address = request.getParameter("server_address");
-		String delimeter = request.getParameter("delimeter");
+		String port = request.getParameter("server_port");
+		String delimeter = request.getParameter("delimeter");		
+		String has_header = request.getParameter("has_header");
 		String unique_keys = request.getParameter("unique_keys");
 		String time = request.getParameter("time");
-		
+		String first_time = request.getParameter("first_time");
+
 		try {
 			id = insertDB(request);	// Add task to DB
 			System.out.println("Task ID from db" + id);
 			
-			createTask(id, filename, address, delimeter, unique_keys, time); }	// Create a task
+			createTask(id, filename, address, port, delimeter,has_header, unique_keys,first_time, time); }	// Create a task
+		
 		catch (InstantiationException | IllegalAccessException | ClassNotFoundException | SQLException e) {
 			e.printStackTrace(); }
 		
@@ -63,12 +66,12 @@ public class mainServ extends HttpServlet {
 	
 
 	
-	public static void createTask(String id, String filename, String add, String delim, String keys, String time) throws InstantiationException, IllegalAccessException, ClassNotFoundException, SQLException {
+	public static void createTask(String id, String filename, String add,String port, String delim, String has_header, String keys,String first_time, String time) throws InstantiationException, IllegalAccessException, ClassNotFoundException, SQLException {
 		
 		Integer seconds = Integer.parseInt(time);
 		
 		// Create task
-		Task task = new Task(id, filename, add, delim, keys, time);		
+		Task task = new Task(id, filename, add,port, delim, has_header, keys,first_time, time);		
 		
 		// Schedule task
 		ScheduledFuture<?> sf = scheduler.scheduleAtFixedRate(task, seconds, seconds , TimeUnit.SECONDS);
@@ -76,61 +79,72 @@ public class mainServ extends HttpServlet {
 		tasks.put(id, sf);
 	}
 	public static String insertDB(HttpServletRequest r) throws InstantiationException, IllegalAccessException, ClassNotFoundException, SQLException {
-		
-		Connection connection = null; 
 		String connectionURL = "jdbc:mysql://localhost/ptyxiaki";
 		Class.forName("com.mysql.jdbc.Driver").newInstance(); 
-		
-		connection = (Connection) DriverManager.getConnection(connectionURL, "root", "root");
-		
+		Connection connection = (Connection) DriverManager.getConnection(connectionURL, "root", "root");
 		Statement stmt = (Statement) connection.createStatement();
+
+		String sql = "INSERT INTO tasks (has_header,filename,server_address,server_port,delimeter,unique_keys,first_time,time,active) "+
+		" VALUES ('"+r.getParameter("has_header")+"','" + r.getParameter("filename") +
+		"','" + r.getParameter("server_address") + "','" + r.getParameter("server_port") + "','" + r.getParameter("delimeter") +
+		"','" + r.getParameter("unique_keys") + "','1','" +r.getParameter("time") +"',1)";
 		
-		 
-		String sql = "INSERT INTO tasks (has_header,filename,server_address,delimeter,unique_keys,time,active) "+
-		" VALUES (1,'" + r.getParameter("filename") +
-		"','" + r.getParameter("server_address") + "','" + r.getParameter("delimeter") +
-		"','" + r.getParameter("unique_keys") + "','" +r.getParameter("time") +"',1)";
 		stmt.executeUpdate(sql);
 		
 		ResultSet rs = stmt.executeQuery("select MAX(id) as last_id from tasks");
 		rs.next();
 		Integer lastid = rs.getInt("last_id");
-
 		
 		connection.close();
-		return lastid.toString();
-		
+		return lastid.toString();		
 	}
 }
 
 class Task implements Runnable
 {
-    private String taskID;
-    private String filename;
-    private String address;
-    private String delimeter;
-    private String unique_keys;
-    private String time;
-    
-    public Task(String taskID, String name, String address, String delimeter, String unique_keys, String time) {
+	String taskID;
+    String filename;
+    String address;
+    String server_port;
+    String delimeter;
+    String has_header;
+    String unique_keys;
+    String time;
+    String first_time;
+
+    public Task(String taskID, String name, String address, String server_port, String delimeter, String has_header, String unique_keys, String first_time, String time) {
         this.taskID = taskID;
         this.filename = name;
         this.address = address;
+        this.server_port = server_port;
         this.delimeter = delimeter;
+        this.has_header = has_header;
         this.unique_keys = unique_keys;
         this.time = time;
-        
+        this.first_time = first_time;
+    }
+    public Task(){
     }
  
     @Override
     public void run() 
     {
         try {
-        	//MyThread th = new MyThread("/home/cluster/spark-1.5.2-bin-hadoop2.6/bin/spark-submit --class com.mycompany.app.App --master mesos://node7:5050 /home/cluster/ptyxiaki/Testapp/test-app/target/test-app-1.0-SNAPSHOT.jar");
-            System.out.println("Doing a task [" + taskID + "] during : " + filename + " - Time - " + new Date());
-            String file = filename + Integer.toString((int)(Math.random()*1000));
-	    	MyThread th = new MyThread("cp init " + file ,  file);
+	    	MyThread th = new MyThread(this);
 			th.start();
+			th.join();
+			if(this.first_time.equals("1")) {
+				
+				this.first_time = "0";
+				String connectionURL = "jdbc:mysql://localhost/ptyxiaki";
+				Class.forName("com.mysql.jdbc.Driver").newInstance(); 
+				Connection connection = (Connection) DriverManager.getConnection(connectionURL, "root", "root");
+				Statement stmt = (Statement) connection.createStatement();
+
+				String sql = "UPDATE tasks SET first_time ='0' WHERE id = "+ this.taskID;				
+				stmt.executeUpdate(sql);
+				
+			}
         } 
         catch (Exception e) {
             e.printStackTrace();

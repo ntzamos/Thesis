@@ -3,9 +3,9 @@
 -- http://www.phpmyadmin.net
 --
 -- Host: localhost
--- Generation Time: Apr 24, 2016 at 02:53 PM
--- Server version: 5.6.28-0ubuntu0.15.10.1
--- PHP Version: 5.6.11-1ubuntu3.1
+-- Generation Time: May 20, 2016 at 12:54 AM
+-- Server version: 5.6.30-0ubuntu0.15.10.1
+-- PHP Version: 5.6.11-1ubuntu3.3
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 SET time_zone = "+00:00";
@@ -28,23 +28,24 @@ SET time_zone = "+00:00";
 
 CREATE TABLE IF NOT EXISTS `tasks` (
   `id` int(11) NOT NULL,
-  `has_header` int(11) NOT NULL DEFAULT '1',
+  `has_header` varchar(5) NOT NULL DEFAULT '1',
   `filename` varchar(100) NOT NULL,
   `server_address` varchar(100) NOT NULL,
+  `server_port` varchar(50) NOT NULL,
   `delimeter` varchar(20) NOT NULL,
   `unique_keys` varchar(500) NOT NULL,
+  `first_time` varchar(5) NOT NULL,
   `time` varchar(50) NOT NULL,
   `active` int(11) NOT NULL DEFAULT '1'
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8;
 
 --
 -- Dumping data for table `tasks`
 --
 
-INSERT INTO `tasks` (`id`, `has_header`, `filename`, `server_address`, `delimeter`, `unique_keys`, `time`, `active`) VALUES
-(1, 1, 'File1.csv', 'http://83.90.32.32', ',', 'username,password,email', '30', 1),
-(2, 1, 'Cars.csv', 'http://67.32.32.23.232', ';', '1,2,5', '3', 1),
-(3, 1, 'nikos', '1', '1', '1', '1', 1);
+INSERT INTO `tasks` (`id`, `has_header`, `filename`, `server_address`, `server_port`, `delimeter`, `unique_keys`, `first_time`, `time`, `active`) VALUES
+(1, '0', 'file.csv', '88.197.53.1935', '19933', ',', '0', '0', '10', 0),
+(2, '1', '/home/commando/file20', '88.197.53.195', '19933', ',', 'id', '0', '20', 1);
 
 --
 -- Indexes for dumped tables
@@ -64,7 +65,7 @@ ALTER TABLE `tasks`
 -- AUTO_INCREMENT for table `tasks`
 --
 ALTER TABLE `tasks`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=4;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=3;
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;

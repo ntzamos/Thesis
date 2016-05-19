@@ -4,7 +4,9 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledFuture;
 
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
@@ -24,14 +26,14 @@ public class MyServletContextListener implements ServletContextListener {
     public MyServletContextListener() {
         root.mainServ.tasks = new HashMap<>();
 		root.mainServ.scheduler = Executors.newScheduledThreadPool(4);
-    	System.out.println("CONSTRUCTOR!~~~~~~~~~~~~~~~");
     }
 
 	/**
      * @see ServletContextListener#contextDestroyed(ServletContextEvent)
      */
     public void contextDestroyed(ServletContextEvent arg0)  { 
-         
+    	for(Map.Entry<String, ScheduledFuture<?>> s: mainServ.tasks.entrySet())
+    		s.getValue().cancel(false);
     }
 
 	/**
@@ -39,7 +41,6 @@ public class MyServletContextListener implements ServletContextListener {
      */
     public void contextInitialized(ServletContextEvent arg0) { 
         
-    	System.out.println("STARTEDDDDD FROM THE BOTTOM!!!!!!!!!!!!!!!!!");
     
 		try {
 			
@@ -59,11 +60,14 @@ public class MyServletContextListener implements ServletContextListener {
 				String id = rs.getString("id");
 				String filename = rs.getString("filename");
 				String address = rs.getString("server_address");
+				String server_port = rs.getString("server_port");
 				String delimeter = rs.getString("delimeter");
+				String has_header = rs.getString("has_header");
 				String unique_keys = rs.getString("unique_keys");
 				String time = rs.getString("time");
+				String first_time = rs.getString("first_time");
 
-				mainServ.createTask(id, filename, address, delimeter, unique_keys, time);
+				mainServ.createTask(id, filename, address,server_port, delimeter,has_header, unique_keys,first_time, time);
 			}
 
 			System.out.println("Updated Scheduler");
