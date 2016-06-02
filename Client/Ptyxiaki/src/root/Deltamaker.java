@@ -8,8 +8,10 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import org.ehcache.Cache;
 import org.ehcache.CacheManager;
@@ -32,16 +34,16 @@ public class Deltamaker {
 		List<String> updated_list = new ArrayList<String>();	
 		List<String> deleted_list = new ArrayList<String>();
 		
-		CacheManager cacheManager = CacheManagerBuilder.newCacheManagerBuilder().withCache("preConfigured",
-		               CacheConfigurationBuilder.newCacheConfigurationBuilder(String.class, String.class, ResourcePoolsBuilder.heap(100))
-		               .build()).build(true);
+		CacheManager cacheManager = CacheManagerBuilder.newCacheManagerBuilder()
+				   .withCache("mapCur", CacheConfigurationBuilder.newCacheConfigurationBuilder(String.class, String.class, ResourcePoolsBuilder.heap(1000))
+		               .build())
+				   .withCache("mapBack", CacheConfigurationBuilder.newCacheConfigurationBuilder(String.class, String.class, ResourcePoolsBuilder.heap(1000))
+		               .build())
+				   .build(true);
 		
-		Cache<String, String> preConfigured = cacheManager.getCache("preConfigured", String.class, String.class);
-		preConfigured.put("nikos", "da one!");
-		
-	    String value = preConfigured.get("nikos");
-	    System.out.println(value);
-	      
+		Cache<String, String> mapCur = cacheManager.getCache("mapCur", String.class, String.class);
+		Cache<String, String> mapBack = cacheManager.getCache("mapBack", String.class, String.class);
+	    
 		// CheckSum for the lines
 		MessageDigest md = MessageDigest.getInstance("MD5");
 		
@@ -104,7 +106,7 @@ public class Deltamaker {
 
 		
 		// Map Current File (unique key, line)
-		Map<String, String> mapCur = new HashMap<String, String>();
+//		Map<String, String> mapCur = new HashMap<String, String>();
 		
 		String fileLine = br_file.readLine();
 		
@@ -136,7 +138,7 @@ public class Deltamaker {
 		}
 		
 		// Map Backup File (unique key, line)
-		Map<String, String> mapBack = new HashMap<String, String>();
+//		Map<String, String> mapBack = new HashMap<String, String>();
 		
 		String backLine = br_back.readLine();
 
@@ -168,26 +170,32 @@ public class Deltamaker {
 			// Continue to the next line
 			backLine = br_back.readLine(); 	
 		}
-	      
-	    System.out.println("PRINTING CURRENT FILE MAP");
-	    for (Map.Entry<String,String> curfile_map : mapCur.entrySet()){
-	    	String key = curfile_map.getKey();
-			String val = curfile_map.getValue();
+		Iterator<Cache.Entry<String,String>> it = mapCur.iterator();
+		    
+		System.out.println("PRINTING CURRENT FILE MAP");
+	    while (it.hasNext()){
+	    	Cache.Entry<String,String> a = it.next();
+	    	String key = a.getKey();
+			String val = a.getValue();
 			System.out.println("Key: " + key + " Value: " + val);
 	    }
+	    Iterator<Cache.Entry<String,String>> it2 = mapBack.iterator();
 	    
 	    System.out.println("PRINTING BACKUP FILE MAP");
-	    for (Map.Entry<String,String> backup_map : mapBack.entrySet()){
-	    	String key = backup_map.getKey();
-			String val = backup_map.getValue();
+	    while (it2.hasNext()){
+	    	Cache.Entry<String,String> a = it2.next();
+	    	String key = a.getKey();
+			String val = a.getValue();
 			System.out.println("Key: " + key + " Value: " + val);
 	    }
 	    
-	    // For every entry of the current file
-		for (Map.Entry<String,String> entry : mapCur.entrySet()) {
-			
-			String key = entry.getKey();	// get the Unique key
-			String val = entry.getValue();	// get the Line
+	    Iterator<Cache.Entry<String,String>> it3 = mapCur.iterator();
+	    
+	    while (it3.hasNext()){
+	    	Cache.Entry<String,String> a = it3.next();
+	    	String key = a.getKey();
+			String val = a.getValue();
+//			System.out.println("Key: " + key + " Value: " + val);
 			
 			String line = mapBack.get(key);	// Search for this key in the BackUp file
 			System.out.println(line);
@@ -198,10 +206,14 @@ public class Deltamaker {
 				updated_list.add(val);
 		}
 		
-		// For every entry of the backup file
-	  	for (Map.Entry<String,String> entry : mapBack.entrySet()) {
-	  		String key = entry.getKey();
-		  	String val = entry.getValue();
+	    Iterator<Cache.Entry<String,String>> it4 = mapBack.iterator();
+	    
+	    // For every entry of the backup file
+	    while (it4.hasNext()){
+	    	Cache.Entry<String,String> a = it4.next();
+	    	String key = a.getKey();
+			String val = a.getValue();
+//			System.out.println("Key: " + key + " Value: " + val);
 		  	String line = mapCur.get(key);
 		  	if(line == null) 
 		  		deleted_list.add(val);
