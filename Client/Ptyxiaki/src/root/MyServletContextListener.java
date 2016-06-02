@@ -1,9 +1,8 @@
 package root;
 
-import java.sql.DriverManager;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledFuture;
@@ -11,9 +10,6 @@ import java.util.concurrent.ScheduledFuture;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 import javax.servlet.annotation.WebListener;
-
-import com.mysql.jdbc.Connection;
-import com.mysql.jdbc.Statement;
 
 /**
  * Application Lifecycle Listener implementation class MyServletContextListener
@@ -43,45 +39,27 @@ public class MyServletContextListener implements ServletContextListener {
         
     
 		try {
+			List<String[]> tasks = mainServ.getAllTasks();
+			for(String[] tokens: tasks) {
 			
-	    	String connectionURL = "jdbc:mysql://localhost/ptyxiaki";
-			Connection connection = null; 
-			Class.forName("com.mysql.jdbc.Driver").newInstance(); 
-			connection = (Connection) DriverManager.getConnection(connectionURL, "root", "root");
-			
-			Statement stmt = (Statement) connection.createStatement();
-			
-			 
-			String sql = "SELECT * FROM tasks WHERE active = 1;";
-			ResultSet rs;
-			rs = stmt.executeQuery(sql);
-
-			while (rs.next()) {
-				String id = rs.getString("id");
-				String filename = rs.getString("filename");
-				String address = rs.getString("server_address");
-				String server_port = rs.getString("server_port");
-				String delimeter = rs.getString("delimeter");
-				String has_header = rs.getString("has_header");
-				String unique_keys = rs.getString("unique_keys");
-				String time = rs.getString("time");
-				String first_time = rs.getString("first_time");
-
-				mainServ.createTask(id, filename, address,server_port, delimeter,has_header, unique_keys,first_time, time);
+				 if(tokens[1].equals("0"))
+						mainServ.createCSVTask(tokens[0], tokens[7], tokens[8],tokens[9], tokens[10],tokens[11], tokens[12],tokens[13], tokens[14], tokens[15]);
+					else 
+						mainServ.createMySQLTask(tokens[0],tokens[2], tokens[3],tokens[4],tokens[5],tokens[6], tokens[8], tokens[9], tokens[10],tokens[11],tokens[14], tokens[15]); 	// Create a task
+					
 			}
 
 			System.out.println("Updated Scheduler");
 			
-			connection.close();
 			
 			
-		} catch (SQLException e) {
-			e.printStackTrace();
 		} catch (InstantiationException e) {
 			e.printStackTrace();
 		} catch (IllegalAccessException e) {
 			e.printStackTrace();
 		} catch (ClassNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
 			e.printStackTrace();
 		}
 

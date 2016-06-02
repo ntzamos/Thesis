@@ -1,8 +1,9 @@
 package root;
 
+import java.io.FileWriter;
 import java.io.IOException;
-import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.List;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -10,8 +11,6 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import com.mysql.jdbc.Connection;
-import com.mysql.jdbc.Statement;
 
 
 @WebServlet("/StopTaskServ")
@@ -33,18 +32,28 @@ public class StopTaskServ extends HttpServlet {
 	}
 
 	/**
+	 * @throws IOException 
 	 * @see HttpServlet#doPost(HttpServletRequest request, HttpServletResponse response)
 	 */
 
-	public void StopTaskDB(String id) throws InstantiationException, IllegalAccessException, ClassNotFoundException, SQLException {
-		String connectionURL = "jdbc:mysql://localhost/ptyxiaki";
-		Class.forName("com.mysql.jdbc.Driver").newInstance(); 
-		Connection connection = (Connection) DriverManager.getConnection(connectionURL, "root", "root");
-		Statement stmt = (Statement) connection.createStatement();
-				 
-		String sql = "UPDATE tasks SET active=0 WHERE id="+ id;
-		stmt.executeUpdate(sql);
-		connection.close();		
+	public void StopTaskDB(String id) throws InstantiationException, IllegalAccessException, ClassNotFoundException, SQLException, IOException {
+		int row = Integer.parseInt(id);
+		int col = 16;
+		// Read existing file 
+
+		List<String[]> tasks = mainServ.getAllTasks();
+		tasks.get(row-1)[col] = "0";
+
+		FileWriter pw = new FileWriter("mytasks.csv",false); 
+		for(String[] task: tasks) {
+			String line = "";
+			for(String tok: task) {
+				line = line + tok + ";";
+			}
+			line = line.substring(0, line.length()-1);
+			pw.append(line);
+		}
+		pw.close();
 	}
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 
