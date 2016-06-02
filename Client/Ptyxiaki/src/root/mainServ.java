@@ -147,6 +147,31 @@ public class mainServ extends HttpServlet {
         fileReader = new BufferedReader(new FileReader("mytasks.csv"));
         
         while ((line = fileReader.readLine()) != null) {
+        			tasks.add(line.split(";"));
+        }
+        
+        fileReader.close();
+
+        return tasks;
+	
+	}
+	public static List<String[]> getActiveTasks() throws IOException {
+		
+		BufferedReader fileReader = null;
+     
+    	//Create a new list of student to be filled by CSV file data 
+    	List<String[]> tasks = new ArrayList<String[]>();
+    	
+        String line = "";
+        
+        //Create the file reader
+
+        File f = new File("mytasks.csv");
+        if(!f.exists()) f.createNewFile();
+        	
+        fileReader = new BufferedReader(new FileReader("mytasks.csv"));
+        
+        while ((line = fileReader.readLine()) != null) {
         	if(line.substring(line.length() - 1).equals("1"))
         			tasks.add(line.split(";"));
         }
@@ -218,7 +243,7 @@ public class mainServ extends HttpServlet {
 			+ r.getParameter("has_header") + ";"  
 			+ r.getParameter("unique_keys") + ";"  
 			+"1;" 
-			+r.getParameter("time") + ";1";
+			+r.getParameter("time") + ";1\n";
 		}
 		System.out.println(task);
 		
@@ -288,16 +313,16 @@ class Task implements Runnable
     {
         try {
         	if(this.ended == false) {
-        		System.out.println("Ignore");
+//        		System.out.println("Ignore");
         		return;
         	}
-        	
+
+//    		System.out.println("Didnt Ignore");
 			this.ended = false;
 	    	MyThread th = new MyThread(this);
 			th.start();
 			th.join();
-			this.ended = true;
-			
+
 			if(this.first_time.equals("1")) {
 				
 				this.first_time = "0";
@@ -315,6 +340,7 @@ class Task implements Runnable
 						line = line + tok + ";";
 					}
 					line = line.substring(0, line.length()-1);
+					line = line + '\n';
 					pw.append(line);
 				}
 				pw.close();

@@ -92,6 +92,10 @@
 			    <input type="text" class="form-control" id="unique_keys" name="unique_keys" placeholder="key1,key2,key3,..">
 			  </div>
 			  <div class="form-group">
+			    <label for="deletes">Keep deletes or not</label>
+			    <input type="text" class="form-control" id="deletes" name="deletes" placeholder="1">
+			  </div>
+			  <div class="form-group">
 			    <label for="seconds">Repeat Every Seconds</label>
 			    <input type="text" class="form-control" id="time" name="time" placeholder="Seconds">
 			  </div>
@@ -182,7 +186,7 @@
 		<tbody> 
 		<% 
 
-		List<String[]> tasks = mainServ.getAllTasks();
+		List<String[]> tasks = mainServ.getActiveTasks();
 		for(String[] tokens: tasks) {
 
 		 	if(tokens[1].equals("0"))
@@ -201,7 +205,7 @@
 		<tbody> 
 		<% 
 
-			List<String[]> sqltasks = mainServ.getAllTasks();
+			List<String[]> sqltasks = mainServ.getActiveTasks();
 			for(String[] tokens: sqltasks) {
 			 	if(tokens[1].equals("1"))
 			

@@ -1,15 +1,12 @@
 package root;
 import java.io.BufferedInputStream;
+import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.net.Socket;
-import java.net.UnknownHostException;
-import java.security.NoSuchAlgorithmException;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 
@@ -21,6 +18,8 @@ class MyThread extends Thread {
 
     Task task;
     DataOutputStream out;
+    DataInputStream in;
+    Socket socket;
     
     public MyThread(Task task) {
     	this.task = task;
@@ -109,71 +108,82 @@ class MyThread extends Thread {
 			    
 			} 
 		    System.out.println("Creating DELTA from "+ task.filename);
-	        try {
-				if(Deltamaker.createDelta( task.filename, task.has_header, task.unique_keys)) { 
-					System.out.println("Delta created");
+			if(Deltamaker.createDelta( task.filename, task.has_header, task.unique_keys)) { 
+				System.out.println("Delta created");
 
-					//while(true) {
-					    System.out.println("Connecting to " + task.address + " on port " + task.server_port);
-					    Socket client = new Socket(task.address, Integer.parseInt(task.server_port));
-					    System.out.println("Just connected to " + client.getRemoteSocketAddress());
-					    System.out.println("============================================================");
+					while(!task.ended) {
+						try {
+						    System.out.println("Connecting to " + task.address + " on port " + task.server_port);
+						    
+							socket = new Socket(task.address, Integer.parseInt(task.server_port));
+						    out    = new DataOutputStream(socket.getOutputStream());
 
-					    OutputStream outToServer = client.getOutputStream();
-					    out = new DataOutputStream(outToServer);
-					    File myFile = new File(task.filename + ".delta");
-					    String filesize = String.valueOf((int)myFile.length());
-				        String[] a = task.filename.split("/");
-				        String filename = a[a.length-1];
-					    String info = filename + "-" + task.delimeter + "-" + task.has_header + "-" + task.unique_keys + "-" + task.first_time + "-" + task.deletes;
-				        
-					    System.out.println("Sending file length: " + filesize);
-					       
-					    out.writeUTF(info);
-					    out.writeUTF(filesize);
-      
+						    System.out.println("Just connected to " + socket.getRemoteSocketAddress());
+						    System.out.println("============================================================");
+						    
+						    
+						    File myFile = new File(task.filename + ".delta");
+						    String filesize = String.valueOf((int)myFile.length());
+					        String[] a = task.filename.split("/");
+					        String filename = a[a.length-1];
+						    String info = filename + "-" + task.delimeter + "-" + task.has_header + "-" + task.unique_keys + "-" + task.first_time + "-" + task.deletes;
+					        
+						    System.out.println("Sending file length: " + filesize);
+						       
+						    out.writeUTF(info);
+						    out.writeUTF(filesize);
+	      
+	
+						    int count;
+						    int c = 0;
+						    byte[] buffer = new byte[Integer.valueOf(filesize)];
+						    BufferedInputStream fin = new BufferedInputStream(new FileInputStream(myFile));
+						    while ((count = fin.read(buffer)) >= 0) {
+						    	out.write(buffer, 0, count);
+						    	c += count;
+						    }
+						    out.flush();
+						    socket.shutdownOutput();
 
-					    int count;
-					    byte[] buffer = new byte[Integer.valueOf(filesize)];
-					
-					    outToServer = client.getOutputStream();
-					    BufferedInputStream in = new BufferedInputStream(new FileInputStream(myFile));
-					    while ((count = in.read(buffer)) >= 0) {
-					    	out.write(buffer, 0, count);
-					    }
-					    out.flush();
-					       
-					    in.close();
-					    client.close();
+//						    System.out.println("Bytes sent: " + c);
 
-					    System.out.println("File sent: " + filesize);
-					    
-					    //while(!server_ended);
-					    //if server ended replyed tote kane break
-					  //  break;
-					//}
-				    
-				} else {
-					System.out.println("No differences found");
-					
-				}
-			} catch (NumberFormatException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (NoSuchAlgorithmException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (FileNotFoundException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (UnknownHostException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} 
-		
+						    in = new DataInputStream(socket.getInputStream());
+
+						    String ans = in.readUTF();
+						    
+						    if(ans.equals("ENDED")) 
+						    	task.ended = true;
+
+						    System.out.println("Ended");
+						    System.out.println("###########");
+
+						    fin.close();
+						    in.close();
+						    out.close();
+						    socket.close();
+					    	break;
+
+						} catch (IOException e) {
+							e.printStackTrace();
+						} 
+						
+						try {
+
+						    System.out.println("Retrying to connect in 5 seconds");
+							Thread.sleep(5000);
+							
+						} catch (InterruptedException e) {
+							e.printStackTrace();
+						}
+					}
+
+			    
+			} else {
+				System.out.println("No differences found");
+				task.ended = true;
+			}
+				
+	
 
     }
 }

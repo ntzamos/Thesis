@@ -51,6 +51,7 @@ public class StopTaskServ extends HttpServlet {
 				line = line + tok + ";";
 			}
 			line = line.substring(0, line.length()-1);
+			line = line + '\n';
 			pw.append(line);
 		}
 		pw.close();
