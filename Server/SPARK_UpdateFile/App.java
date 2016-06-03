@@ -16,11 +16,22 @@ import java.lang.*;
 import java.util.*;
 import scala.Tuple2;
 import org.apache.hadoop.fs.*;
+
 public class App
 {
 	public static void main( String[] args ) throws IOException
-	{
-		SparkConf conf = new SparkConf().setAppName("HelloTEST").setMaster("mesos://node2:5050");
+	{	/*
+			args[0]: Filename
+			args[1]: 1 if header else 0
+			args[2]: Unique keys (comma separated)
+			args[3]: Delimeter to split the file
+			args[4]: Option to mark the delete entry or remove it. 1: Mark, 0: Dont mark
+		*/
+		if (args.length != 5){
+			throw new RuntimeException("Number of argument must be 5");
+		}
+
+		SparkConf conf = new SparkConf().setAppName("HelloTEST").set("spark.mesos.coarse", "false").setMaster("mesos://node6:5050");
 		JavaSparkContext sc = new JavaSparkContext(conf);
 
 		Map <String, Integer> col_offset = new HashMap<String, Integer>();	// Maps column names to indexes
@@ -41,21 +52,25 @@ public class App
 
 		// Delimeter to split the file
 		String delimeter = args[3].trim();
-		JavaRDD<String> deltaFile = null;
-		deltaFile = sc.textFile("/hdfs/delta");				//Read DELTA file from HDFS (Tha to xei valei o socket server)
 
+		// Delete option
+		String mark_deletes = args[4].trim();
 
-		JavaRDD<String> fileToUpdate = sc.textFile("/hdfs/inputs/" + filename);	//Read file-to-update from HDFS
+		//Read DELTA file from HDFS (Tha to xei valei o socket server)
+		JavaRDD<String> deltaFile = sc.textFile("/hdfs/delta" + filename);
+
+		//Read file-to-update from HDFS
+		JavaRDD<String> fileToUpdate = sc.textFile("/hdfs/inputs" + filename + "/" + filename);
+
 		JavaRDD<String> header_rdd = null;
 
-		System.out.println("READ FILES");
 		String header = "no header";
 
 		if (has_header.equals("1")){	// If file has header
 
 			// Get Header
 			header = fileToUpdate.first();
-			System.out.println("Header = " + header);
+
 			// Keap header rdd to add it back later
 			header_lst.add(header);
 			header_rdd = sc.parallelize(header_lst);
@@ -65,24 +80,14 @@ public class App
 			// Remove header of file rdd
 			fileToUpdate = fileToUpdate.filter(s -> !s.equals(header2));
 
-			String [] header_cols = header.split(",");
+			String [] header_cols = header.split(delimeter);
 
 			// Map column names to indexes
 			for (int i = 0; i < header_cols.length; i ++){
 				if (Arrays.asList(unique_keys).contains(header_cols[i]))
 					col_offset.put(header_cols[i],new Integer(i));
 			}
-
 		}
-
-		System.out.println("ALL GOOD");
-		// for (Map.Entry<String,Integer> entry : col_offset.entrySet()) {
-		//   String key = entry.getKey();
-		//   Integer value = entry.getValue();
-		//   System.out.println("col: " + key + ", index: " + value.toString());
-		//  	}
-		// System.out.println("=========== HEADER ===========");
-		// System.out.println(header);
 		//=================================================================
 		// Filter and get all the INSERTS (I: ..)
 		//=================================================================
@@ -253,17 +258,18 @@ public class App
 		if (has_header.equals("1"))
 			fileToUpdate = header_rdd.union(fileToUpdate);
 		fileToUpdate = fileToUpdate.union(updates);
-		fileToUpdate = fileToUpdate.union(deletes);
+		if (mark_deletes.equals("1"))	// Add the deleted line MARKED. Else dont add it
+			fileToUpdate = fileToUpdate.union(deletes);
 		fileToUpdate = fileToUpdate.union(inserts);
 
 		// Kinda overwrite xD
 		FileSystem hdfs = FileSystem.get(new Configuration());
 
 		// Save file to results directory
-		fileToUpdate.saveAsTextFile("/hdfs/results/" + filename);
+		fileToUpdate.saveAsTextFile("/hdfs/results" + filename + "/" + filename);
 
-		Path inputs_dir = new Path("hdfs://node1:50050/hdfs/inputs");
-		Path results_dir = new Path("hdfs://node1:50050/hdfs/results");
+		Path inputs_dir = new Path("hdfs://node1:50050/hdfs/inputs" + filename);
+		Path results_dir = new Path("hdfs://node1:50050/hdfs/results" + filename);
 
 		// Delete Old input directory
 		if(hdfs.exists(inputs_dir)){
